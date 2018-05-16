@@ -26,6 +26,11 @@ wss.assignPlayers = () => {
   wss.clients.forEach(function each(client) {
     wss.playerNums[client.id] = playerNum;
     wss.clientNums[playerNum] = client
+    // Update each client with its new playerNum
+    client.send(JSON.stringify({
+      type: 'ASSIGN_PLAYER',
+      content: playerNum
+    }))
     playerNum++
   })
   log('wss.playerNums = ', wss.playerNums)
@@ -40,18 +45,15 @@ wss.on('connection', (ws) => {
 
   wss.assignPlayers();
 
-  ws.send(JSON.stringify({
-    type: 'ASSIGN_PLAYER',
-    content: wss.playerNums[ws.id]
-  }))
+  ws
   ws.on('close', () => {
     wss.assignPlayers();
     log(`Client disconnected -> ${totalClients(wss)} client(s) connected`)
   })
   ws.on('message', (receivedData) => {
     const data = JSON.parse(receivedData)
-    // If data from player 0, send to player 1
-    if (data.type === 'P0') {
+    // If data from player 0, send to player 1 if exists
+    if (data.type === 'P0' && wss.clientNums[1]) {
       wss.clientNums[1].send(receivedData)
     // If data from player 1, send to player 0
     } else if (data.type === 'P1') {
