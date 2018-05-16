@@ -18,10 +18,14 @@ const wss = new SocketServer({ server });
 wss.getUniqueId = () => uuidv1();
 // Assign player numbers (0, 1) to WS clients by UUID
 wss.assignPlayers = () => {
+  // Dict of UUID: playerNum, eg. wss.playerNums['abc123-abc123'] = 0 (player 0)
   wss.playerNums = {}
+  // array of playerNum: ws connection, eg. wss.clientNums[0] = client for player 0
+  wss.clientNums = []
   let playerNum = 0;
   wss.clients.forEach(function each(client) {
     wss.playerNums[client.id] = playerNum;
+    wss.clientNums[playerNum] = client
     playerNum++
   })
   log('wss.playerNums = ', wss.playerNums)
@@ -44,8 +48,15 @@ wss.on('connection', (ws) => {
     wss.assignPlayers();
     log(`Client disconnected -> ${totalClients(wss)} client(s) connected`)
   })
-  ws.on('message', (data) => {
-    log(`Received message: `, JSON.parse(data))
-    ws.send('Hello back from server')
+  ws.on('message', (receivedData) => {
+    const data = JSON.parse(receivedData)
+    // If data from player 0, send to player 1
+    if (data.type === 'P0') {
+      wss.clientNums[1].send(receivedData)
+    // If data from player 1, send to player 0
+    } else if (data.type === 'P1') {
+      wss.clientNums[0].send(receivedData)
+    }
+
   })
 })

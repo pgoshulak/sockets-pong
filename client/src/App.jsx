@@ -34,49 +34,57 @@ class App extends Component {
     }
   }
 
-  setPlayerPos = (player, pos) => {
+  setPlayerPos = (player, pos, cb) => {
     if (player === 0) {
       this.setState({
         playerPos: [
           pos,
           this.state.playerPos[1]
         ]
-      })
+      }, cb)
     } else if (player === 1) {
       this.setState({
         playerPos: [
           this.state.playerPos[0],
           pos
         ]
-      })
+      }, cb)
     }
   }
 
-  incrementPlayerPos = (player, inc) => {
+  incrementPlayerPos = (player, inc, cb) => {
     if (player === 0) {
       this.setState({
         playerPos: [
           this.state.playerPos[0] + inc,
           this.state.playerPos[1]
         ]
-      })
+      }, cb)
     } else if (player === 1) {
       this.setState({
         playerPos: [
           this.state.playerPos[0],
           this.state.playerPos[1] + inc
         ]
-      })
+      }, cb)
     }
+  }
+
+  sendCurrentPlayerPos = () => {
+    const player = this.state.currentPlayer
+    this.sendNewServerMessage({
+      type: `P${player}`,
+      content: this.state.playerPos[player]
+    })
   }
 
   onKeyDown = (event) => {
     // Keyboard Up arrow
     if (event.key === 'ArrowUp') {
-      this.incrementPlayerPos(this.state.currentPlayer, 1)
+      this.incrementPlayerPos(this.state.currentPlayer, 1, this.sendCurrentPlayerPos)
       // Keyboard Down arrow
     } else if (event.key === 'ArrowDown') {
-      this.incrementPlayerPos(this.state.currentPlayer, -1)
+      this.incrementPlayerPos(this.state.currentPlayer, -1, this.sendCurrentPlayerPos)
     }
   }
 
