@@ -16,10 +16,10 @@ const wss = new SocketServer({ server });
 
 // Generate a unique ID
 wss.getUniqueId = () => uuidv1();
-// Assign player numbers (1, 2) to WS clients by UUID
+// Assign player numbers (0, 1) to WS clients by UUID
 wss.assignPlayers = () => {
   wss.playerNums = {}
-  let playerNum = 1;
+  let playerNum = 0;
   wss.clients.forEach(function each(client) {
     wss.playerNums[client.id] = playerNum;
     playerNum++
@@ -28,7 +28,6 @@ wss.assignPlayers = () => {
 }
 
 const totalClients = (wss) => wss.clients.size;
-// totalClients = totalClients.bind(wss)
 
 wss.on('connection', (ws) => {
   log(`New connection -> ${totalClients(wss)} client(s) connected`)
@@ -37,7 +36,10 @@ wss.on('connection', (ws) => {
 
   wss.assignPlayers();
 
-  ws.send(`Hello from server, you are user ${ws.id}`)
+  ws.send(JSON.stringify({
+    type: 'ASSIGN_PLAYER',
+    content: wss.playerNums[ws.id]
+  }))
   ws.on('close', () => {
     wss.assignPlayers();
     log(`Client disconnected -> ${totalClients(wss)} client(s) connected`)
