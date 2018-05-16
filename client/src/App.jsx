@@ -5,26 +5,32 @@ const SOCKET_ADDRESS = 'ws://localhost:3001'
 
 class App extends Component {
   constructor() {
+    super();
     this.state = {
       player1Pos: 0,
       player2Pos: 0,
       currentPlayer: -1,
       player1Score: 0,
       player2Score: 0,
-      ballX: 0,
-      ballY: 0,
-      ballDeltaY: 0,
-      ballDeltaX: 0,
+      ball: {
+        x: 0,
+        y: 0,
+        dx: 0,
+        dy: 0
+      }
     }
   }
 
-  handleServerMessage = (data) => {
-    console.log('Received message from server:', data)
+  handleServerMessage = (message) => {
+    console.log('Received message from server:', message.data)
+  }
+
+  sendNewServerMessage = (data) => {
+    this.socket.send(JSON.stringify(data));
   }
   
   componentDidMount() {
     this.socket = new WebSocket(SOCKET_ADDRESS)
-    console.log(this.socket)
     this.socket.onmessage = this.handleServerMessage
   }
 
@@ -32,6 +38,7 @@ class App extends Component {
     return (
       <div className="App">
         Hello
+        <button onClick={() => this.sendNewServerMessage('hello from button')}>send hello</button>
       </div>
     );
   }
