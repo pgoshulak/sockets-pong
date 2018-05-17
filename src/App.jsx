@@ -9,9 +9,10 @@ const X_MIN = 2, X_MAX = 98;
 const Y_MIN = 0, Y_MAX = 100;
 const BALL_SPEED_INCREMENT = 1.05;
 const BALL_SPEED_INITIAL = 2.0
+const BALL_SPEED_MAX = 3.0
 const PLAYER_SPEED = 1.5;
 const PADDLE_FORGIVENESS = 1.5;
-const singlePlayer = true
+const singlePlayer = false
 
 const PlayerCounter = ({count}) => {
   return <div>Count is {count}</div>
@@ -26,14 +27,18 @@ class App extends Component {
       currentPlayer: -1,
       playerScore: [0,0],
       ball: {
-        x: 50,
-        y: 50,
-        dx: 1.0,
-        dy: 0.0,
-        speed: BALL_SPEED_INITIAL
+        test: -1
       },
       upArrowPressed: false,
       downArrowPressed: false
+    }
+    // Ball is removed from state because the async nature of setState() is too unreliable
+    this.ball = {
+      x: 50,
+      y: 50,
+      dx: 1.0,
+      dy: 0.0,
+      speed: BALL_SPEED_INITIAL
     }
   }
 
@@ -52,7 +57,7 @@ class App extends Component {
       this.setPlayerPos(1, data.content)
 
     } else if (data.type === 'BALL') {
-      this.setState({ ball: data.content })
+      this.setBall(data.content)
     }
   }
 
@@ -72,6 +77,10 @@ class App extends Component {
         ]
       }, cb)
     }
+  }
+
+  setBall = (newBall) => {
+    this.ball = {...this.ball, ...newBall}
   }
 
   incrementPlayerPos = (player, inc, cb) => {
@@ -129,10 +138,11 @@ class App extends Component {
   }
 
   updateBall = () => {
-    let ball = {...this.state.ball}
+    let ball = {...this.ball}
     const playerPos = this.state.playerPos;
     const playerSize = this.state.playerSize
     const currentPlayer = this.state.currentPlayer
+    let flagToSendBall = false
     // Check along x=0 side
     if (ball.x < X_MIN) {
       // Check if ball is within the player's paddle
@@ -143,11 +153,11 @@ class App extends Component {
         ball.speed *= BALL_SPEED_INCREMENT
         // Send updated ball position after paddle bounce
         if (currentPlayer === 0) {
-          this.sendBall(ball)
+          flagToSendBall = true;
         }
       } else {
         // Reset score here
-        this.setWinner(1)
+        this.setLoser(1)
         return
       }
     }
@@ -160,11 +170,11 @@ class App extends Component {
         ball.speed *= BALL_SPEED_INCREMENT
         // Send updated ball position after paddle bounce
         if (currentPlayer === 1) {
-          this.sendBall(ball)
+          flagToSendBall = true
         }
       } else {
         // Reset score here
-        this.setWinner(0)
+        this.setLoser(0)
         return
       }
     }
@@ -173,10 +183,12 @@ class App extends Component {
       ball.dy *= -1
     }
 
+    if (ball.speed > BALL_SPEED_MAX) ball.speed = BALL_SPEED_MAX
         // Increment ball location
     ball.x += ball.dx * ball.speed
     ball.y += ball.dy * ball.speed
-    this.setState({ ball })
+    this.setBall(ball)
+    if (flagToSendBall) this.sendBall(ball)
   }
 
   bounceBallOffPaddle(ball, paddlePos, paddleSize) {
@@ -194,10 +206,12 @@ class App extends Component {
     return {dx, dy}
   }
 
-  setWinner = (playerNum) => {
+  setLoser = (loserPlayer) => {
+    let winnerPlayer = 0
+    if (loserPlayer === 0) winnerPlayer = 1
     // Get and increment the winner's score
     const playerScore = [...this.state.playerScore]
-    playerScore[playerNum]++
+    playerScore[winnerPlayer]++
     this.setState({playerScore})
     // Reset the ball position
     this.resetBall();
@@ -211,7 +225,8 @@ class App extends Component {
       dy: 0,
       speed: BALL_SPEED_INITIAL
     }
-    this.setState({ ball });
+    this.setBall(ball)
+    this.sendBall(ball)
     ball = {
       x: 50,
       y: 50,
@@ -220,7 +235,7 @@ class App extends Component {
       speed: BALL_SPEED_INITIAL
     }
     setTimeout(() => {
-      this.setState({ ball })
+      this.setBall(ball)
       this.sendBall(ball)
     }, 1000)
   }
@@ -233,7 +248,7 @@ class App extends Component {
   sendBall = (ball) => {
     this.sendNewServerMessage({
       type: 'BALL',
-      content: ball || this.state.ball
+      content: ball || this.ball
     });
   }
   
@@ -251,6 +266,7 @@ class App extends Component {
     setInterval(() => {
       this.updateKeys()
       this.updateBall()
+      this.forceUpdate()
     }, 33)
   }
 
@@ -261,7 +277,7 @@ class App extends Component {
         Player 0: {this.state.playerScore[0]} /// Player 1: {this.state.playerScore[1]}
         <PlayerCounter count={ this.state.playerPos[0] } />
         <PlayerCounter count={ this.state.playerPos[1] } />
-        <Game playerPos={this.state.playerPos} playerSize={this.state.playerSize} ball={this.state.ball}/>
+        <Game playerPos={this.state.playerPos} playerSize={this.state.playerSize} ball={this.ball}/>
       </div>
     );
   }
