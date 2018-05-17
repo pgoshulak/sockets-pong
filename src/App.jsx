@@ -12,6 +12,8 @@ const BALL_SPEED_INITIAL = 2.0
 const BALL_SPEED_MAX = 3.0
 const PLAYER_SPEED = 1.5;
 const PADDLE_FORGIVENESS = 1.5;
+const PLAYER_SIZE_INCREMENT = 1;
+
 const singlePlayer = false
 
 const PlayerCounter = ({count}) => {
@@ -23,7 +25,7 @@ class App extends Component {
     super();
     this.state = {
       playerPos: [50,50],
-      playerSize: [20, 10],
+      playerSize: [20, 20],
       currentPlayer: -1,
       playerScore: [0,0],
       ball: {
@@ -58,6 +60,8 @@ class App extends Component {
 
     } else if (data.type === 'BALL') {
       this.setBall(data.content)
+    } else if (data.type === 'WIN') {
+      this.setState ({ ...data.content })
     }
   }
 
@@ -157,7 +161,7 @@ class App extends Component {
         }
       } else {
         // Reset score here
-        this.setLoser(1)
+        this.setLoser(0)
         return
       }
     }
@@ -174,7 +178,7 @@ class App extends Component {
         }
       } else {
         // Reset score here
-        this.setLoser(0)
+        this.setLoser(1)
         return
       }
     }
@@ -207,12 +211,22 @@ class App extends Component {
   }
 
   setLoser = (loserPlayer) => {
+    console.log('setting loser as ' + loserPlayer)
     let winnerPlayer = 0
     if (loserPlayer === 0) winnerPlayer = 1
     // Get and increment the winner's score
     const playerScore = [...this.state.playerScore]
     playerScore[winnerPlayer]++
-    this.setState({playerScore})
+    // Get and adjust the players' sizes
+    const playerSize = [...this.state.playerSize]
+    playerSize[winnerPlayer] -= PLAYER_SIZE_INCREMENT
+    playerSize[loserPlayer] += PLAYER_SIZE_INCREMENT
+
+    this.sendNewServerMessage({
+      type: 'WIN',
+      content: { playerScore, playerSize }
+    })
+    this.setState({playerScore, playerSize})
     // Reset the ball position
     this.resetBall();
   }
@@ -275,8 +289,6 @@ class App extends Component {
       <div className="App">
         Hello player { this.state.currentPlayer } <br/>
         Player 0: {this.state.playerScore[0]} /// Player 1: {this.state.playerScore[1]}
-        <PlayerCounter count={ this.state.playerPos[0] } />
-        <PlayerCounter count={ this.state.playerPos[1] } />
         <Game playerPos={this.state.playerPos} playerSize={this.state.playerSize} ball={this.ball}/>
       </div>
     );

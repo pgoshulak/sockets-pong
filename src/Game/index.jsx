@@ -13,9 +13,6 @@ class Game extends Component {
     const scaleY = surfaceHeight / 100;
     return ( 
       <div>
-        ball speed = {this.props.ball.speed} <br/>
-        ball.x = {this.props.ball.x}
-        ball.y = {this.props.ball.y}
         <Stage width={surfaceWidth} height={surfaceHeight}>
           <Layer scale={{x: scaleX, y: scaleY}}>
             <Rect x={0} y={0} width={100} height={100} fill={'grey'}/>
