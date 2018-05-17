@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { Stage, Layer, Rect, Text } from 'react-konva';
-import Konva from 'konva';
+import { Stage, Layer, Rect } from 'react-konva';
 
 class Game extends Component {
   constructor(props) {
@@ -14,9 +13,11 @@ class Game extends Component {
     const scaleY = surfaceHeight / 100;
     return ( 
       <div>
-        ball speed = {this.props.ball.speed}
+        ball speed = {this.props.ball.speed} <br/>
+        ball.x = {this.props.ball.x}
+        ball.y = {this.props.ball.y}
         <Stage width={surfaceWidth} height={surfaceHeight}>
-          <Layer width={100} height={100} scale={{x: scaleX, y: scaleY}}>
+          <Layer scale={{x: scaleX, y: scaleY}}>
             <Rect x={0} y={0} width={100} height={100} fill={'grey'}/>
             <Rect x={0} y={this.props.playerPos[0] - this.props.playerSize[0]/2} width={1} height={this.props.playerSize[0]} fill={'black'}/>
             <Rect x={99} y={this.props.playerPos[1] - this.props.playerSize[1]/2} width={1} height={this.props.playerSize[1]} fill={'black'}/>

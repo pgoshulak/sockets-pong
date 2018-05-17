@@ -2,7 +2,9 @@ import React, { Component } from 'react';
 import './App.css';
 import Game from './Game';
 
-const SOCKET_ADDRESS = 'ws://pong-server-pgosh.herokuapp.com'
+// const SOCKET_ADDRESS = 'ws://pong-server-pgosh.herokuapp.com'
+const SOCKET_ADDRESS = 'ws://localhost:3001'
+
 const X_MIN = 2, X_MAX = 98;
 const Y_MIN = 0, Y_MAX = 100;
 const BALL_SPEED_INCREMENT = 1.05;
@@ -37,12 +39,20 @@ class App extends Component {
 
   handleServerMessage = (message) => {
     const data = JSON.parse(message.data)
+    const currentPlayer = this.state.currentPlayer
     if (data.type === 'ASSIGN_PLAYER') {
       this.setState({ currentPlayer: data.content })
-    } else if (data.type === 'P0') {
+
+      // Update player 0 data from server ONLY IF the client is not player 0 (ie. preserve local client as source-of-truth)
+    } else if (data.type === 'P0' && currentPlayer !== 0) {
       this.setPlayerPos(0, data.content)
-    } else if (data.type === 'P1') {
+
+      // Update player 1 data from server ONLY IF the client is not player 1
+    } else if (data.type === 'P1' && currentPlayer !== 1) {
       this.setPlayerPos(1, data.content)
+
+    } else if (data.type === 'BALL') {
+      this.setState({ ball: data.content })
     }
   }
 
@@ -122,6 +132,7 @@ class App extends Component {
     let ball = {...this.state.ball}
     const playerPos = this.state.playerPos;
     const playerSize = this.state.playerSize
+    const currentPlayer = this.state.currentPlayer
     // Check along x=0 side
     if (ball.x < X_MIN) {
       // Check if ball is within the player's paddle
@@ -130,6 +141,10 @@ class App extends Component {
         ball = {...ball, ...this.bounceBallOffPaddle(ball, playerPos[0], playerSize[0])}
         // Increase the speed
         ball.speed *= BALL_SPEED_INCREMENT
+        // Send updated ball position after paddle bounce
+        if (currentPlayer === 0) {
+          this.sendBall(ball)
+        }
       } else {
         // Reset score here
         this.setWinner(1)
@@ -140,9 +155,13 @@ class App extends Component {
       // Check if ball is within the player's paddle
       if (singlePlayer || Math.abs(ball.y - playerPos[1]) <= playerSize[1] * PADDLE_FORGIVENESS / 2) {
         // Reflect the ball (TODO: calculate new angle)
-        ball = {...ball, ...this.bounceBallOffPaddle(ball, playerPos[1], playerSize[0])}
+        ball = {...ball, ...this.bounceBallOffPaddle(ball, playerPos[1], playerSize[1])}
         // Increase the speed
         ball.speed *= BALL_SPEED_INCREMENT
+        // Send updated ball position after paddle bounce
+        if (currentPlayer === 1) {
+          this.sendBall(ball)
+        }
       } else {
         // Reset score here
         this.setWinner(0)
@@ -202,12 +221,20 @@ class App extends Component {
     }
     setTimeout(() => {
       this.setState({ ball })
+      this.sendBall(ball)
     }, 1000)
   }
 
 
   sendNewServerMessage = (data) => {
     this.socket.send(JSON.stringify(data));
+  }
+
+  sendBall = (ball) => {
+    this.sendNewServerMessage({
+      type: 'BALL',
+      content: ball || this.state.ball
+    });
   }
   
   componentDidMount() {
