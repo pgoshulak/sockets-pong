@@ -45,19 +45,18 @@ wss.on('connection', (ws) => {
 
   wss.assignPlayers();
 
-  ws
   ws.on('close', () => {
+    log(`Player ${wss.playerNums[ws.id]} has dropped`)
     wss.assignPlayers();
     log(`Client disconnected -> ${totalClients(wss)} client(s) connected`)
   })
   ws.on('message', (receivedData) => {
     const data = JSON.parse(receivedData)
-    // If data from player 0, send to player 1 if exists
-    if (data.type === 'P0' && wss.clientNums[1]) {
-      wss.clientNums[1].send(receivedData)
-    // If data from player 1, send to player 0
-    } else if (data.type === 'P1') {
-      wss.clientNums[0].send(receivedData)
+    // Broadcast player moves to all players
+    if (data.type === 'P0' || data.type === 'P1') {
+      wss.clients.forEach(function each(client) {
+        client.send(receivedData)
+      })
     }
 
   })
