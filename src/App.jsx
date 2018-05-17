@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import Game from './Game';
 
-const SOCKET_ADDRESS = 'ws://localhost:3001'
+const SOCKET_ADDRESS = 'ws://pong-server-pgosh.herokuapp.com'
 const X_MIN = 2, X_MAX = 98;
 const Y_MIN = 0, Y_MAX = 100;
 const BALL_SPEED_INCREMENT = 1.05;
