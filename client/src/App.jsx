@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
+import Game from './Game';
 
 const SOCKET_ADDRESS = 'ws://localhost:3001'
 
@@ -105,6 +106,7 @@ class App extends Component {
         Hello player { this.state.currentPlayer }
         <PlayerCounter count={ this.state.playerPos[0] } />
         <PlayerCounter count={ this.state.playerPos[1] } />
+        <Game p0Position={this.state.playerPos[0]} p1Position={this.state.playerPos[1]}/>
       </div>
     );
   }
