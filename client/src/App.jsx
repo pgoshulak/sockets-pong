@@ -3,6 +3,7 @@ import './App.css';
 import Game from './Game';
 
 const SOCKET_ADDRESS = 'ws://localhost:3001'
+// const 
 
 const PlayerCounter = ({count}) => {
   return <div>Count is {count}</div>
@@ -12,15 +13,17 @@ class App extends Component {
   constructor() {
     super();
     this.state = {
-      playerPos: [0,0],
+      playerPos: [50,50],
       currentPlayer: -1,
       playerScore: [0,0],
       ball: {
         x: 0,
         y: 0,
-        dx: 0,
-        dy: 0
-      }
+        dx: 2,
+        dy: 0.5
+      },
+      upArrowPressed: false,
+      downArrowPressed: false
     }
   }
 
@@ -82,11 +85,43 @@ class App extends Component {
   onKeyDown = (event) => {
     // Keyboard Up arrow
     if (event.key === 'ArrowUp') {
-      this.incrementPlayerPos(this.state.currentPlayer, 1, this.sendCurrentPlayerPos)
+      this.setState({upArrowPressed: true})
       // Keyboard Down arrow
     } else if (event.key === 'ArrowDown') {
+      this.setState({downArrowPressed: true})
+    }
+  }
+  onKeyUp = (event) => {
+    // Keyboard Up arrow
+    if (event.key === 'ArrowUp') {
+      this.setState({upArrowPressed: false})
+      // Keyboard Down arrow
+    } else if (event.key === 'ArrowDown') {
+      this.setState({downArrowPressed: false})
+    }
+  }
+
+  updateKeys = () => {
+    if (this.state.upArrowPressed) {
+      this.incrementPlayerPos(this.state.currentPlayer, 1, this.sendCurrentPlayerPos)
+    }
+    if (this.state.downArrowPressed) {
       this.incrementPlayerPos(this.state.currentPlayer, -1, this.sendCurrentPlayerPos)
     }
+  }
+
+  updateBall = () => {
+    const ball = {...this.state.ball}
+    if (ball.x > 100 || ball.x < 0) {
+      ball.dx *= -1
+    }
+    if (ball.y > 100 || ball.y < 0) {
+      ball.dy *= -1
+    }
+
+    ball.x += ball.dx
+    ball.y += ball.dy
+    this.setState({ ball })
   }
 
   sendNewServerMessage = (data) => {
@@ -98,6 +133,16 @@ class App extends Component {
     this.socket.onmessage = this.handleServerMessage
 
     document.addEventListener('keydown', this.onKeyDown)
+    document.addEventListener('keyup', this.onKeyUp)
+
+    this.gameTick();
+  }
+
+  gameTick = () => {
+    setInterval(() => {
+      this.updateKeys()
+      this.updateBall()
+    }, 33)
   }
 
   render() {
@@ -106,7 +151,7 @@ class App extends Component {
         Hello player { this.state.currentPlayer }
         <PlayerCounter count={ this.state.playerPos[0] } />
         <PlayerCounter count={ this.state.playerPos[1] } />
-        <Game p0Position={this.state.playerPos[0]} p1Position={this.state.playerPos[1]}/>
+        <Game p0Position={this.state.playerPos[0]} p1Position={this.state.playerPos[1]} ball={this.state.ball}/>
       </div>
     );
   }
