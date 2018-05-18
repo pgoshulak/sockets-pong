@@ -115,19 +115,19 @@ class App extends Component {
 
   onKeyDown = (event) => {
     // Keyboard Up arrow
-    if (event.key === 'ArrowUp') {
+    if (event.key === 'ArrowUp' || event.code === 'ArrowUp') {
       this.setState({upArrowPressed: true})
       // Keyboard Down arrow
-    } else if (event.key === 'ArrowDown') {
+    } else if (event.key === 'ArrowDown' || event.code === 'ArrowDown') {
       this.setState({downArrowPressed: true})
     }
   }
   onKeyUp = (event) => {
     // Keyboard Up arrow
-    if (event.key === 'ArrowUp') {
+    if (event.key === 'ArrowUp' || event.code === 'ArrowUp') {
       this.setState({upArrowPressed: false})
       // Keyboard Down arrow
-    } else if (event.key === 'ArrowDown') {
+    } else if (event.key === 'ArrowDown' || event.code === 'ArrowDown') {
       this.setState({downArrowPressed: false})
     }
   }
