@@ -1,20 +1,24 @@
 import React, { Component } from 'react';
 import './App.css';
 import Game from './Game';
+require('dotenv').config();
 
-const SOCKET_ADDRESS = 'ws://pong-server-pgosh.herokuapp.com'
-// const SOCKET_ADDRESS = 'ws://localhost:3001'
+const SOCKET_ADDRESS = process.env.PONG || 'ws://pong-server-pgosh.herokuapp.com'
 
 const X_MIN = 2, X_MAX = 98;
 const Y_MIN = 0, Y_MAX = 100;
 const BALL_SPEED_INCREMENT = 1.05;
-const BALL_SPEED_INITIAL = 2.0
-const BALL_SPEED_MAX = 3.0
+const BALL_SPEED_INITIAL = 1.0
+const BALL_SPEED_MAX = 2.0
 const PLAYER_SPEED = 1.5;
 const PADDLE_FORGIVENESS = 1.5;
 const PLAYER_SIZE_INCREMENT = 1;
+// AI will move to within this proportion of paddle size 
+// eg. 1.0 -> AI aligns paddle edge to ball
+// eg. 0.0 -> AI aligns paddle middle to ball
+const AI_THRESHOLD = 0.8;
 
-const singlePlayer = false
+const singlePlayer = true
 
 const PlayerCounter = ({count}) => {
   return <div>Count is {count}</div>
@@ -168,7 +172,7 @@ class App extends Component {
     }
     if (ball.x > X_MAX) {
       // Check if ball is within the player's paddle
-      if (singlePlayer || Math.abs(ball.y - playerPos[1]) <= playerSize[1] * PADDLE_FORGIVENESS / 2) {
+      if (Math.abs(ball.y - playerPos[1]) <= playerSize[1] * PADDLE_FORGIVENESS / 2) {
         // Reflect the ball
         ball = {...ball, ...this.bounceBallOffPaddle(ball, playerPos[1], playerSize[1])}
         // Increase the speed
@@ -277,8 +281,25 @@ class App extends Component {
     this.gameTick();
   }
 
+  moveAi() {
+    const aiPos = this.state.playerPos[1]
+    const aiSize = this.state.playerSize[1]
+    const thresholdDist = (aiSize / 2) * AI_THRESHOLD
+
+    // if (this.ball.y - aiPos)
+
+    if (this.ball.y - aiPos > thresholdDist) {
+      this.incrementPlayerPos(1, 1)
+    } else if (this.ball.y - aiPos < -thresholdDist) {
+      this.incrementPlayerPos(1, -1)
+    }
+  }
+
   gameTick = () => {
     setInterval(() => {
+      if (singlePlayer) {
+        this.moveAi()
+      }
       this.updateKeys()
       this.updateBall()
       this.forceUpdate()
