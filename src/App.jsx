@@ -17,6 +17,9 @@ const PLAYER_SIZE_INCREMENT = 1;
 // eg. 1.0 -> AI aligns paddle edge to ball
 // eg. 0.0 -> AI aligns paddle middle to ball
 const AI_THRESHOLD = 0.8;
+// "Distance travelled" accumulates to calculate 'pseudo-speed', used to calculate ball spin
+const DIST_TRAVEL_INCREMENT = 1
+const DIST_TRAVEL_DECREMENT = 0.5
 
 const singlePlayer = true
 
@@ -29,6 +32,7 @@ class App extends Component {
     super();
     this.state = {
       playerPos: [50,50],
+      playerTravelDist: [0,0],
       playerSize: [20, 20],
       currentPlayer: -1,
       playerScore: [0,0],
@@ -44,6 +48,7 @@ class App extends Component {
       y: 50,
       dx: 1.0,
       dy: 0.0,
+      fy: 0.0,
       speed: BALL_SPEED_INITIAL
     }
   }
@@ -92,21 +97,13 @@ class App extends Component {
   }
 
   incrementPlayerPos = (player, inc, cb) => {
-    if (player === 0) {
-      this.setState({
-        playerPos: [
-          this.state.playerPos[0] + inc * PLAYER_SPEED,
-          this.state.playerPos[1]
-        ]
-      }, cb)
-    } else if (player === 1) {
-      this.setState({
-        playerPos: [
-          this.state.playerPos[0],
-          this.state.playerPos[1] + inc * PLAYER_SPEED
-        ]
-      }, cb)
-    }
+    this.setState({
+      playerPos: Object.assign(
+        [], 
+        this.state.playerPos, 
+        { [player]: this.state.playerPos[player] + inc * PLAYER_SPEED }
+      )
+    }, cb)
   }
 
   sendCurrentPlayerPos = () => {
