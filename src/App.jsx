@@ -148,10 +148,11 @@ class App extends Component {
     const currentPlayer = this.state.currentPlayer
     let flagToSendBall = false
     // Check along x=0 side
+    // TODO: refactor out into separate function
     if (ball.x < X_MIN) {
       // Check if ball is within the player's paddle
       if (Math.abs(ball.y - playerPos[0]) <= playerSize[0] * PADDLE_FORGIVENESS / 2) {
-        // Reflect the ball (TODO: calculate new angle)
+        // Reflect the ball
         ball = {...ball, ...this.bounceBallOffPaddle(ball, playerPos[0], playerSize[0])}
         // Increase the speed
         ball.speed *= BALL_SPEED_INCREMENT
@@ -168,7 +169,7 @@ class App extends Component {
     if (ball.x > X_MAX) {
       // Check if ball is within the player's paddle
       if (singlePlayer || Math.abs(ball.y - playerPos[1]) <= playerSize[1] * PADDLE_FORGIVENESS / 2) {
-        // Reflect the ball (TODO: calculate new angle)
+        // Reflect the ball
         ball = {...ball, ...this.bounceBallOffPaddle(ball, playerPos[1], playerSize[1])}
         // Increase the speed
         ball.speed *= BALL_SPEED_INCREMENT
@@ -281,7 +282,7 @@ class App extends Component {
       this.updateKeys()
       this.updateBall()
       this.forceUpdate()
-    }, 33)
+    }, 16)
   }
 
   render() {
