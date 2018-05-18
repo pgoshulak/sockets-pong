@@ -18,8 +18,12 @@ const PLAYER_SIZE_INCREMENT = 1;
 // eg. 0.0 -> AI aligns paddle middle to ball
 const AI_THRESHOLD = 0.8;
 // "Distance travelled" accumulates to calculate 'pseudo-speed', used to calculate ball spin
+// Greater difference between these two values means that spin 'accumulates' easier
 const DIST_TRAVEL_INCREMENT = 1
-const DIST_TRAVEL_DECREMENT = 0.5
+const DIST_TRAVEL_DECREMENT = 0.7
+// Force of spin on ball velocity
+// Increasing this value increases spin 'curvature' (too high may clip outside of play area)
+const SPIN_STRENGTH = 0.005
 
 const singlePlayer = true
 
@@ -102,6 +106,10 @@ class App extends Component {
         [], 
         this.state.playerPos, 
         { [player]: this.state.playerPos[player] + inc * PLAYER_SPEED }
+      ),
+      playerTravelDist: Object.assign([],
+        this.state.playerTravelDist,
+        { [player]: this.state.playerTravelDist[player] + inc * DIST_TRAVEL_INCREMENT}
       )
     }, cb)
   }
@@ -146,6 +154,7 @@ class App extends Component {
     let ball = {...this.ball}
     const playerPos = this.state.playerPos;
     const playerSize = this.state.playerSize
+    const playerTravelDist = this.state.playerTravelDist
     const currentPlayer = this.state.currentPlayer
     let flagToSendBall = false
     // Check along x=0 side
@@ -154,7 +163,11 @@ class App extends Component {
       // Check if ball is within the player's paddle
       if (Math.abs(ball.y - playerPos[0]) <= playerSize[0] * PADDLE_FORGIVENESS / 2) {
         // Reflect the ball
-        ball = {...ball, ...this.bounceBallOffPaddle(ball, playerPos[0], playerSize[0])}
+        ball = {
+          ...ball,
+          ...this.bounceBallOffPaddle(ball, playerPos[0], playerSize[0]),
+          ...{fy: playerTravelDist[0]}
+        }
         // Increase the speed
         ball.speed *= BALL_SPEED_INCREMENT
         // Send updated ball position after paddle bounce
@@ -171,7 +184,11 @@ class App extends Component {
       // Check if ball is within the player's paddle
       if (Math.abs(ball.y - playerPos[1]) <= playerSize[1] * PADDLE_FORGIVENESS / 2) {
         // Reflect the ball
-        ball = {...ball, ...this.bounceBallOffPaddle(ball, playerPos[1], playerSize[1])}
+        ball = {
+          ...ball,
+          ...this.bounceBallOffPaddle(ball, playerPos[1], playerSize[1]),
+          ...{fy: playerTravelDist[1]}
+        }
         // Increase the speed
         ball.speed *= BALL_SPEED_INCREMENT
         // Send updated ball position after paddle bounce
@@ -189,8 +206,13 @@ class App extends Component {
       ball.dy *= -1
     }
 
+    // Limit speed
     if (ball.speed > BALL_SPEED_MAX) ball.speed = BALL_SPEED_MAX
-        // Increment ball location
+
+    // Implement spin (increment vertical speed by force)
+    ball.dy -= ball.fy * SPIN_STRENGTH
+
+    // Increment ball location
     ball.x += ball.dx * ball.speed
     ball.y += ball.dy * ball.speed
     this.setBall(ball)
@@ -239,6 +261,7 @@ class App extends Component {
       y: 50,
       dx: 0,
       dy: 0,
+      fy: 0.0,
       speed: BALL_SPEED_INITIAL
     }
     this.setBall(ball)
@@ -248,6 +271,7 @@ class App extends Component {
       y: 50,
       dx: 1.0,
       dy: 0.0,
+      fy: 0.0,
       speed: BALL_SPEED_INITIAL
     }
     setTimeout(() => {
@@ -283,13 +307,26 @@ class App extends Component {
     const aiSize = this.state.playerSize[1]
     const thresholdDist = (aiSize / 2) * AI_THRESHOLD
 
-    // if (this.ball.y - aiPos)
-
     if (this.ball.y - aiPos > thresholdDist) {
       this.incrementPlayerPos(1, 1)
     } else if (this.ball.y - aiPos < -thresholdDist) {
       this.incrementPlayerPos(1, -1)
     }
+  }
+
+  // Slowly decrease the player's 'tally' of distance travelled, for spin calculations
+  decrementDistTravelled() {
+    const playerTravelDist = this.state.playerTravelDist;
+    this.setState({
+      playerTravelDist: Object.assign([], [
+          playerTravelDist[0] > 0 
+            ? Math.max(0, playerTravelDist[0] - DIST_TRAVEL_DECREMENT)
+            : Math.min(0, playerTravelDist[0] + DIST_TRAVEL_DECREMENT),
+          playerTravelDist[1] > 0 
+            ? Math.max(0, playerTravelDist[1] - DIST_TRAVEL_DECREMENT)
+            : Math.min(0, playerTravelDist[1] + DIST_TRAVEL_DECREMENT)
+        ])
+    })
   }
 
   gameTick = () => {
@@ -299,6 +336,7 @@ class App extends Component {
       }
       this.updateKeys()
       this.updateBall()
+      this.decrementDistTravelled()
       this.forceUpdate()
     }, 16)
   }
@@ -308,6 +346,8 @@ class App extends Component {
       <div className="App">
         Hello player { this.state.currentPlayer } <br/>
         Player 0: {this.state.playerScore[0]} /// Player 1: {this.state.playerScore[1]}
+        Player 0: {this.state.playerTravelDist[0]} /// Player 1: {this.state.playerTravelDist[1]}
+        Ball spin: {this.ball.fy * SPIN_STRENGTH}
         <Game playerPos={this.state.playerPos} playerSize={this.state.playerSize} ball={this.ball}/>
       </div>
     );
